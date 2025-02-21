@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
+#include<string.h>
 
 typedef enum {
     TKN_SPL_SYM,
@@ -16,12 +17,12 @@ typedef struct{
     TOKEN_TYPE type;
 } Token;
 
-static int row = 1, col = 1;
-const char specialSymbols[] = {':', '?', ';', '[', ']', '{', '}', ',', '(', ')'};
-const char arithmeticSymbol[] = {'*', '+', '-', '/', '%'};
+static int row = 1, col = 0;
+const char specialSymbols[] = {':', '?', ';', '[', ']', '{', '}', ',', '(', ')', '\0'};
+const char arithmeticSymbol[] = {'*', '+', '-', '/', '%', '\0'};
 
 bool charPresentIn(char cin, const char *arr){
-    size_t len = sizeof(arr)/sizeof(char);
+    size_t len = strlen(arr);
     for(int i=0; i<len;i++){
         if(arr[i]==cin){
             return true;
@@ -34,7 +35,12 @@ bool charPresentIn(char cin, const char *arr){
 Token getNextToken(FILE *fin){
     char c;
     Token tkn = {.row=-1};
-    while((c = fgetc(fin))!= EOF){
+    while((c = fgetc(fin)) != EOF && ++col){
+        if(c == '\n') {
+            col=0;
+            row++;
+            continue;
+        }
         if(charPresentIn(c, specialSymbols)) {
             switch (c)
             {
@@ -71,6 +77,8 @@ Token getNextToken(FILE *fin){
             default:
                 break;
             }
+            
+            return tkn;
         }else if(charPresentIn(c, arithmeticSymbol)){
             switch (c)
             {
@@ -92,6 +100,11 @@ Token getNextToken(FILE *fin){
             default:
                 break;
             }
+            
+            return tkn;
+        }else {
+            tkn = (Token){.lexeme="CHAR", .row=row, .col=col, .type=TOKEN_CONSTANT};
+            return tkn;
         }
     }
     return tkn;
@@ -105,9 +118,9 @@ int main(){
     scanf("%s", filename);
 
     f1 = fopen(filename, "rb");
-    Token *tkn = (Token *)getNextToken(f1);
-    while((tkn = ) && tkn->row!=-1){
-        printf("Lexeme: %s", tkn->lexeme);
+    Token tkn;
+    while ((tkn = getNextToken(f1)).row != -1) {
+        printf("Lexeme: %s, Row: %u, Column: %u\n", tkn.lexeme, tkn.row, tkn.col);
     }
     fclose(f1);
     return 0;
